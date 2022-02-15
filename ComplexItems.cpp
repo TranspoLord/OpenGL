@@ -20,17 +20,17 @@ float counter = 0.0f;
 //Unnamed namespace
 namespace {
 	const char* const Window_Title = "Texturing";
-	const int Window_Height = 600;
-	const int Window_Width = 800;
+	const int Window_Height = 1024;
+	const int Window_Width = 1280;
 
 	GLFWwindow* mainWindow = nullptr;
 	GLuint mainProgramID;
 	GLuint lightProgramID;	
 
 	glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
-	glm::vec3 lightScale(0.3f);
+	glm::vec3 lightScale(0.9f);
 	glm::vec3 objectColor(1.0f, 0.2f, 0.0f);
-	glm::vec3 lightPos(1.5f, 0.5f, 3.0f);
+	glm::vec3 lightPos(0.0f, 3.0f, 3.0f);
 
 	bool isLampMoving = false;
 
@@ -73,24 +73,28 @@ namespace {
 	};
 
 	struct UCylinder {
-		GLuint vao;
 		GLuint ibo;
-		GLuint vbo[2];
+		GLuint vbo;
 		Cylinder cylinder;
 	};
 
 	//All declarations for objects in scene
 	Cube tableTop, frontRightLeg, frontLeftLeg, backRightLeg, backLeftLeg, plane;
-	Cube chairFRLeg, chairFLLeg, chairBRLeg, chairBLLeg, chairBackLeft, chairBackRight, chairBackSupport, chairSeat;
+	Cube couchFRLeg, couchFLLeg, couchBRLeg, couchBLLeg, couchSeatSupport, couchLeftCushion, couchRightCushion, couchBackSupport, couchRightArm, couchLeftArm;
+	Cube laptopBase, laptopScreen, laptopBack;
+	Cube longCouchBase, longCouchFRLeg, longCouchBRLeg, longCouchFLLeg, longCouchBLLeg, longCouchCushion1, longCouchCushion2, longCouchCushion3, longCouchCushion4;
+	Cube longCouchLeftArm, longCouchRightArm, longCouchBack;
+
 	Cube lightObject;
 
 	UCylinder cylinder;
 
 	struct Texture {
 		GLuint greyPlastic;
-		GLuint greyCarpet;
+		GLuint navyCarpet;
 		GLuint blackFabric;
 		GLuint woodenLegs;
+		GLuint blueFabric;
 	};
 
 	Texture textures;
@@ -123,7 +127,7 @@ void DrawObject(GLint modelLoc, GLint viewLoc, GLint projLoc, GLint objectColorL
 void MousePositon(GLFWwindow* window, double xPos, double zPos);
 void MouseScroll(GLFWwindow* window, double xSet, double zSet);
 void MouseButton(GLFWwindow* window, int button, int action, int mods);
-void ObjectScaleTransRotate(Cube& obj, float sX, float sY, float sZ, float tX, float tY, float tZ, float rX, float rY, float rZ, float rMulti);
+void ObjectScaleTransRotate(float sX, float sY, float sZ, float tX, float tY, float tZ, float rX, float rY, float rZ, float rMulti, Cube &obj);
 void MainMeshCreation();
 void MainMeshDeletion();
 void MainTextureCreation();
@@ -175,7 +179,7 @@ const GLchar* objectFragmentShader = GLSL(440,
 void main()
 {
 	//Calculate Ambient
-	float ambientStrength = 0.3f;
+	float ambientStrength = 0.9f;
 	vec3 ambient = ambientStrength * lightColor;
 
 	//Calculate Diffuse
@@ -301,24 +305,46 @@ void RenderFrame() {
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
 	//Objects for the table
-	ObjectScaleTransRotate(tableTop, 2.0f, 0.2f, 2.0f, 0.0f, 0.0f, 0.0f, 1.0, 1.0f, 1.0f, 0.0f);
-	ObjectScaleTransRotate(frontRightLeg, 0.2f, 2.0f, 0.2f, -0.75f, -1.0f, -0.1f, 1.0, 1.0f, 1.0f, 0.0f);
-	ObjectScaleTransRotate(frontLeftLeg, 0.2f, 2.0f, 0.2f, -0.75f, -1.0f, -1.7f, 1.0, 1.0f, 1.0f, 0.0f);
-	ObjectScaleTransRotate(backRightLeg, 0.2f, 2.0f, 0.2f, 0.75f, -1.0f, -0.1f, 1.0, 1.0f, 1.0f, 0.0f);
-	ObjectScaleTransRotate(backLeftLeg, 0.2f, 2.0f, 0.2f, 0.75f, -1.0f, -1.7f, 1.0, 1.0f, 1.0f, 0.0f);
+	ObjectScaleTransRotate(4.0f, 0.2f, 4.0f,   0.0f, -1.0f,  0.0f,   1.0f, 1.0f, 1.0f, 0.0f, tableTop);
+	ObjectScaleTransRotate(0.2f, 1.0f, 0.2f,  -1.5f, -1.5f, -3.45f,  1.0f, 1.0f, 1.0f, 0.0f, frontRightLeg);
+	ObjectScaleTransRotate(0.2f, 1.0f, 0.2f,   1.5f, -1.5f, -3.45f,	 1.0f, 1.0f, 1.0f, 0.0f, frontLeftLeg);
+	ObjectScaleTransRotate(0.2f, 1.0f, 0.2f,   1.5f, -1.5f, -0.35f,	 1.0f, 1.0f, 1.0f, 0.0f, backLeftLeg);
+	ObjectScaleTransRotate(0.2f, 1.0f, 0.2f,  -1.5f, -1.5f, -0.35f,  1.0f, 1.0f, 1.0f, 0.0f, backRightLeg);
 
 	//Object for the plane
-	ObjectScaleTransRotate(plane, 10.0f, 0.1f, 10.0f, 0.0f, -2.0f, 3.85f, 1.0f, 1.0f, 1.0f, 0.0f);
+	ObjectScaleTransRotate(15.0f, 0.05f, 15.0f, 0.0f, -2.0f, 3.85f, 1.0f, 1.0f, 1.0f, 0.0f, plane);
 
-	//This was added to give a sense of direction in the render
-	ObjectScaleTransRotate(chairFRLeg, 0.1f, 1.0f, 0.1f, 1.75f, -1.5f, -0.45f, 1.0, 1.0f, 1.0f, 0.0f);
-	ObjectScaleTransRotate(chairFLLeg, 0.1f, 1.0f, 0.1f, 1.75f, -1.5f, -1.3f, 1.0, 1.0f, 1.0f, 0.0f);
-	ObjectScaleTransRotate(chairBRLeg, 0.1f, 1.0f, 0.1f, 2.5f, -1.5f, -0.45f, 1.0, 1.0f, 1.0f, 0.0f);
-	ObjectScaleTransRotate(chairBLLeg, 0.1f, 1.0f, 0.1f, 2.5f, -1.5f, -1.3f, 1.0, 1.0f, 1.0f, 0.0f);
-	ObjectScaleTransRotate(chairSeat, 1.2f, 0.1f, 1.1f, 2.1f, -1.0f, -0.375f, 1.0, 1.0f, 1.0f, 0.0f);
-	ObjectScaleTransRotate(chairBackRight, 0.1f, 1.1f, 0.1f, 2.5f, -0.4f, -0.45f, 0.0, 0.0f, 1.0f, -0.1f);
-	ObjectScaleTransRotate(chairBackLeft, 0.1f, 1.1f, 0.1f, 2.5f, -0.4f, -1.3f, 0.0, 0.0f, 1.0f, -0.1f);
-	ObjectScaleTransRotate(chairBackSupport, 0.05f, 0.05f, 0.8f, 2.535f, -0.2f, -0.5f, 0.0, 0.0f, 1.0f, -0.1f);
+	//Couch
+	ObjectScaleTransRotate(5.0f, 0.4f, 1.5f,    0.0f, -1.3f,  3.5f,   1.0f, 1.0f, 1.0f, 0.0f, couchSeatSupport);
+	ObjectScaleTransRotate(4.99f, 0.2f, 1.2f,   0.0f, -1.25f, 3.5f,   1.0f, 0.0f, 0.0f, 1.7f, couchBackSupport);
+	ObjectScaleTransRotate(0.1f, 0.5f, 0.1f,   -2.2f, -1.75f, 3.3f,	  1.0f, 1.0f, 1.0f, 0.0f, couchBRLeg);
+	ObjectScaleTransRotate(0.1f, 0.5f, 0.1f,   -2.2f, -1.75f, 2.3f,	  1.0f, 1.0f, 1.0f, 0.0f, couchBLLeg);
+	ObjectScaleTransRotate(0.1f, 0.5f, 0.1f,    2.2f, -1.75f, 3.3f,	  1.0f, 1.0f, 1.0f, 0.0f, couchFLLeg);
+	ObjectScaleTransRotate(0.1f, 0.5f, 0.1f,    2.2f, -1.75f, 2.3f,	  1.0f, 1.0f, 1.0f, 0.0f, couchFRLeg);
+	ObjectScaleTransRotate(0.2f, 0.9f, 1.6f,    2.5f, -1.0f,  3.5f,   1.0f, 1.0f, 1.0f, 0.0f, couchRightArm);
+	ObjectScaleTransRotate(0.2f, 0.9f, 1.6f,   -2.5f, -1.0f,  3.5f,   1.0f, 1.0f, 1.0f, 0.0f, couchLeftArm);
+	ObjectScaleTransRotate(2.3f, 0.3f, 1.4f,   -1.2f, -1.1f,  3.5f,   1.0f, 1.0f, 1.0f, 0.0f, couchRightCushion);
+	ObjectScaleTransRotate(2.3f, 0.3f, 1.4f,    1.2f, -1.1f,  3.5f,   1.0f, 1.0f, 1.0f, 0.0f, couchLeftCushion);
+
+	//Laptop
+	ObjectScaleTransRotate(0.65f, 0.05f, 0.4f,    -0.10f,  -0.87f, -0.10f,   1.0f, 1.0f, 1.0f, 0.0f, laptopBase);
+	ObjectScaleTransRotate(0.65f, 0.05f, 0.4f,    -0.10f,  -0.87f, -0.5f,    1.0f, 0.0f, 0.0f, 1.0f, laptopBack);
+	ObjectScaleTransRotate(0.6f, 0.05f, 0.35f,    -0.10f,  -0.85f, -0.5f,    1.0f, 0.0f, 0.0f, 1.0f, laptopScreen);
+
+	//Long Couch
+	ObjectScaleTransRotate(1.5f, 0.4f, 7.0f,	 5.0f, -1.3f,   0.25f,    1.0f, 1.0f, 1.0f, 0.0f, longCouchBase);
+	ObjectScaleTransRotate(0.15f, 0.5f, 0.15f,   5.5f, -1.75f, -6.25f,    1.0f, 1.0f, 1.0f, 0.0f, longCouchBLLeg);
+	ObjectScaleTransRotate(0.15f, 0.5f, 0.15f,   4.5f, -1.75f, -6.25f,    1.0f, 1.0f, 1.0f, 0.0f, longCouchFLLeg);
+	ObjectScaleTransRotate(0.15f, 0.5f, 0.15f,   5.5f, -1.75f, -0.25f,    1.0f, 1.0f, 1.0f, 0.0f, longCouchFRLeg);
+	ObjectScaleTransRotate(0.15f, 0.5f, 0.15f,   4.5f, -1.75f, -0.25f,    1.0f, 1.0f, 1.0f, 0.0f, longCouchBRLeg);
+	ObjectScaleTransRotate(1.48f, 0.4f, 7.0f,    6.0f, -0.5f,   0.25f,    0.0f, 0.0f, 1.0f, 1.4f, longCouchBack);
+	ObjectScaleTransRotate(1.4f, 0.3f, 1.5f,     5.0f, -1.1f,  -0.05f,    1.0f, 1.0f, 1.0f, 0.0f, longCouchCushion1);
+	ObjectScaleTransRotate(1.4f, 0.3f, 1.5f,     5.0f, -1.1f,  -4.85f,    1.0f, 1.0f, 1.0f, 0.0f, longCouchCushion2);
+	ObjectScaleTransRotate(1.4f, 0.3f, 1.5f,     5.0f, -1.1f,  -3.22f,    1.0f, 1.0f, 1.0f, 0.0f, longCouchCushion3);
+	ObjectScaleTransRotate(1.4f, 0.3f, 1.5f,     5.0f, -1.1f,  -1.65f,    1.0f, 1.0f, 1.0f, 0.0f, longCouchCushion4);
+	ObjectScaleTransRotate(1.7f, 1.0f, 0.2f,     5.0f, -1.0f,   0.29f,    1.0f, 1.0f, 1.0f, 0.0f, longCouchLeftArm);
+	ObjectScaleTransRotate(1.7f, 1.0f, 0.2f,     5.0f, -1.0f,  -6.61f,    1.0f, 1.0f, 1.0f, 0.0f, longCouchRightArm);
+
 
 	//set camera view before checking 
 	glm::mat4 projection = glm::perspective(glm::radians(mainCamera.Zoom), (GLfloat)Window_Width / (GLfloat)Window_Height, 0.1f, 100.0f);
@@ -349,15 +375,37 @@ void RenderFrame() {
 	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, frontLeftLeg, textures.woodenLegs, view, projection);
 	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, backRightLeg, textures.woodenLegs, view, projection);
 	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, backLeftLeg, textures.woodenLegs, view, projection);
-	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, plane, textures.greyCarpet, view, projection);
-	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, chairBLLeg, textures.woodenLegs, view, projection);
-	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, chairBRLeg, textures.woodenLegs, view, projection);
-	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, chairFLLeg, textures.woodenLegs, view, projection);
-	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, chairFRLeg, textures.woodenLegs, view, projection);
-	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, chairSeat, textures.blackFabric, view, projection);
-	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, chairBackLeft, textures.woodenLegs, view, projection);
-	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, chairBackRight, textures.woodenLegs, view, projection);
-	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, chairBackSupport, textures.woodenLegs, view, projection);
+
+	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, plane, textures.navyCarpet, view, projection);
+
+	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, couchBLLeg, textures.woodenLegs, view, projection);
+	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, couchBRLeg, textures.woodenLegs, view, projection);
+	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, couchFLLeg, textures.woodenLegs, view, projection);
+	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, couchFRLeg, textures.woodenLegs, view, projection);
+	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, couchSeatSupport, textures.blackFabric, view, projection);
+	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, couchLeftCushion, textures.blueFabric, view, projection);
+	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, couchRightCushion, textures.blueFabric, view, projection);
+	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, couchRightArm, textures.blackFabric, view, projection);
+	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, couchLeftArm, textures.blackFabric, view, projection);
+	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, couchBackSupport, textures.blackFabric, view, projection);
+
+	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, laptopBase, textures.woodenLegs, view, projection);
+	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, laptopBack, textures.woodenLegs, view, projection);
+	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, laptopScreen, textures.blackFabric, view, projection);
+
+	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, longCouchBase, textures.blackFabric, view, projection);
+	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, longCouchBLLeg, textures.woodenLegs, view, projection);
+	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, longCouchBRLeg, textures.woodenLegs, view, projection);
+	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, longCouchFLLeg, textures.woodenLegs, view, projection);
+	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, longCouchFRLeg, textures.woodenLegs, view, projection);
+	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, longCouchBack, textures.blackFabric, view, projection);
+	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, longCouchCushion1, textures.blueFabric, view, projection);
+	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, longCouchCushion2, textures.blueFabric, view, projection);
+	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, longCouchCushion3, textures.blueFabric, view, projection);
+	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, longCouchCushion4, textures.blueFabric, view, projection);
+	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, longCouchLeftArm, textures.blackFabric, view, projection);
+	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, longCouchRightArm, textures.blackFabric, view, projection);
+
 
 	//cout << "Calling cylinder Draw -----" << endl;
 	DrawCylinder(cylinder, attribVertexPosition, attribVertexNormal, attribVertexTexCoord, lightColorLoc, lightPositionLoc);
@@ -381,7 +429,7 @@ void RenderFrame() {
 }
 
 //Simple func to reduce lines of code. Changes the scale, translation, and rotation of an object with the float passed into it
-void ObjectScaleTransRotate(Cube& obj, float sX, float sY, float sZ, float tX, float tY, float tZ, float rX, float rY, float rZ, float rMulti) {
+void ObjectScaleTransRotate(float sX, float sY, float sZ, float tX, float tY, float tZ, float rX, float rY, float rZ, float rMulti, Cube &obj) {
 	obj.scale = glm::scale(glm::vec3(sX, sY, sZ));
 	obj.translation = glm::translate(glm::vec3(tX, tY, tZ));
 	obj.rotation = glm::rotate(rMulti, glm::vec3(rX, rY, rZ));
@@ -640,7 +688,10 @@ void ImageFlipVert(unsigned char* image, int width, int height, int channels) {
 
 /*Keeping large blocks of the same func call in one location*/
 void DrawCylinder(UCylinder cylinder, GLint attribVerPos, GLint attribVerNorm, GLint attribVerUV, GLint lightColorLoc, GLint lightPosLoc) {
-	//cout << "Beginning of Cylinder Draw" << endl;
+	cout << "Beginning of Cylinder Draw" << endl;
+
+	//glBindBuffer(GL_ARRAY_BUFFER, cylinder.vbo);
+	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cylinder.ibo);
 
 	glEnableVertexAttribArray(attribVerPos);
 	glEnableVertexAttribArray(attribVerNorm);
@@ -653,8 +704,12 @@ void DrawCylinder(UCylinder cylinder, GLint attribVerPos, GLint attribVerNorm, G
 
 	glUniform3f(lightColorLoc, lightColor.r, lightColor.b, lightColor.b);
 	glUniform3f(lightPosLoc, lightPos.x, lightPos.y, lightPos.z);
+
+	MeshCreationCylinder(cylinder);
+
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, textures.woodenLegs);
+
 	glDrawElements(GL_TRIANGLES, cylinder.cylinder.getIndexCount(), GL_UNSIGNED_INT, (void*)0);
 
 	glDisableVertexAttribArray(attribVerPos);
@@ -663,25 +718,24 @@ void DrawCylinder(UCylinder cylinder, GLint attribVerPos, GLint attribVerNorm, G
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-	//cout << "End of Cylinder Draw" << endl;
+	cout << "End of Cylinder Draw" << endl;
 }
 
 void MeshCreationCylinder(UCylinder cylinder) {
-	//cout << "Start of Cylinder Mesh creation" << endl;
+	cout << "Start of Cylinder Mesh creation" << endl;
 	cylinder.cylinder.set(5.0f, 5.0f, 9.0f, 32, 32, false);  //will be moved once cylinder is being drawn
 
-	glGenBuffers(2, cylinder.vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, cylinder.vbo[0]);
+	glGenBuffers(1, &cylinder.vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, cylinder.vbo);
 	glBufferData(GL_ARRAY_BUFFER, cylinder.cylinder.getInterleavedVertexSize(), cylinder.cylinder.getInterleavedVertices(), GL_STATIC_DRAW);
 
 	glGenBuffers(1, &cylinder.ibo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cylinder.ibo);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, cylinder.cylinder.getIndexSize(), cylinder.cylinder.getIndices(), GL_STATIC_DRAW);
 
-	glBindBuffer(GL_ARRAY_BUFFER, cylinder.vbo[1]);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cylinder.ibo);
-	//cout << "End of cylinder mesh creation" << endl;
+	cout << "End of cylinder mesh creation" << endl;
 }
+
 
 
 void MainMeshCreation() {
@@ -690,15 +744,37 @@ void MainMeshCreation() {
 	MeshCreation(frontLeftLeg);
 	MeshCreation(backRightLeg);
 	MeshCreation(backLeftLeg);
+
 	MeshCreation(plane);
-	MeshCreation(chairFRLeg);
-	MeshCreation(chairBRLeg);
-	MeshCreation(chairFLLeg);
-	MeshCreation(chairBLLeg);
-	MeshCreation(chairBackLeft);
-	MeshCreation(chairBackRight);
-	MeshCreation(chairBackSupport);
-	MeshCreation(chairSeat);
+
+	MeshCreation(couchFRLeg);
+	MeshCreation(couchBRLeg);
+	MeshCreation(couchFLLeg);
+	MeshCreation(couchBLLeg);
+	MeshCreation(couchLeftArm);
+	MeshCreation(couchBackSupport);
+	MeshCreation(couchRightArm);
+	MeshCreation(couchSeatSupport);
+	MeshCreation(couchLeftCushion);
+	MeshCreation(couchRightCushion);
+
+	MeshCreation(laptopBase);
+	MeshCreation(laptopBack);
+	MeshCreation(laptopScreen);
+
+	MeshCreation(longCouchFRLeg);
+	MeshCreation(longCouchBRLeg);
+	MeshCreation(longCouchFLLeg);
+	MeshCreation(longCouchBLLeg);
+	MeshCreation(longCouchLeftArm);
+	MeshCreation(longCouchBack);
+	MeshCreation(longCouchRightArm);
+	MeshCreation(longCouchBase);
+	MeshCreation(longCouchCushion1);
+	MeshCreation(longCouchCushion2);
+	MeshCreation(longCouchCushion3);
+	MeshCreation(longCouchCushion4);
+
 	MeshCreation(lightObject);
 
 	//Testing block
@@ -711,28 +787,53 @@ void MainMeshDeletion() {
 	MeshDeletion(frontLeftLeg);
 	MeshDeletion(backRightLeg);
 	MeshDeletion(backLeftLeg);
+
 	MeshDeletion(plane);
-	MeshDeletion(chairFRLeg);
-	MeshDeletion(chairBRLeg);
-	MeshDeletion(chairFLLeg);
-	MeshDeletion(chairBLLeg);
-	MeshDeletion(chairBackLeft);
-	MeshDeletion(chairBackRight);
-	MeshDeletion(chairBackSupport);
-	MeshDeletion(chairSeat);
+
+	MeshDeletion(couchFRLeg);
+	MeshDeletion(couchBRLeg);
+	MeshDeletion(couchFLLeg);
+	MeshDeletion(couchBLLeg);
+	MeshDeletion(couchSeatSupport);
+	MeshDeletion(couchBackSupport);
+	MeshDeletion(couchRightArm);
+	MeshDeletion(couchSeatSupport);
+	MeshDeletion(couchLeftCushion);
+	MeshDeletion(couchRightCushion);
+
+	MeshDeletion(laptopBack);
+	MeshDeletion(laptopScreen);
+	MeshDeletion(laptopBase);
+
+	MeshDeletion(longCouchFRLeg);
+	MeshDeletion(longCouchBRLeg);
+	MeshDeletion(longCouchFLLeg);
+	MeshDeletion(longCouchBLLeg);
+	MeshDeletion(longCouchLeftArm);
+	MeshDeletion(longCouchBack);
+	MeshDeletion(longCouchRightArm);
+	MeshDeletion(longCouchBase);
+	MeshDeletion(longCouchCushion1);
+	MeshDeletion(longCouchCushion2);
+	MeshDeletion(longCouchCushion3);
+	MeshDeletion(longCouchCushion4);
+
+
 	MeshDeletion(lightObject);
 }
 
 void MainTextureCreation() {
 	TextureCreation("../../resources/textures/blackfabric.png", textures.blackFabric);
-	TextureCreation("../../resources/textures/navycarpet.png", textures.greyCarpet);
+	TextureCreation("../../resources/textures/navycarpet.png", textures.navyCarpet);
 	TextureCreation("../../resources/textures/greyplastic.png", textures.greyPlastic);
 	TextureCreation("../../resources/textures/wood.png", textures.woodenLegs);
+	TextureCreation("../../resources/textures/bluefabric.png", textures.blueFabric);
 }
 
 void MainTextureDeletion() {
 	TextureDeletion(textures.blackFabric);
-	TextureDeletion(textures.greyCarpet);
+	TextureDeletion(textures.navyCarpet);
 	TextureDeletion(textures.greyPlastic);
 	TextureDeletion(textures.woodenLegs);
+	TextureDeletion(textures.blueFabric);
 }
