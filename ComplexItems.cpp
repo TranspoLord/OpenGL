@@ -72,10 +72,19 @@ namespace {
 		};
 	};
 
+	struct UCylinder {
+		GLuint vao;
+		GLuint ibo;
+		GLuint vbo[2];
+		Cylinder cylinder;
+	};
+
 	//All declarations for objects in scene
 	Cube tableTop, frontRightLeg, frontLeftLeg, backRightLeg, backLeftLeg, plane;
 	Cube chairFRLeg, chairFLLeg, chairBRLeg, chairBLLeg, chairBackLeft, chairBackRight, chairBackSupport, chairSeat;
 	Cube lightObject;
+
+	UCylinder cylinder;
 
 	struct Texture {
 		GLuint greyPlastic;
@@ -85,10 +94,6 @@ namespace {
 	};
 
 	Texture textures;
-	GLUquadric *quadObj = gluNewQuadric();
-	GLint attribVertexPosition;
-	GLint attribVertexNormal;
-	GLint attribVertexTexCoord;
 }
 
 //Camera variables
@@ -126,7 +131,9 @@ void MainTextureDeletion();
 void TextureCreation(const char* fileName, GLuint& texture);
 void TextureDeletion(GLuint texture);
 void ImageFlipVert(unsigned char* image, int width, int height, int channels);
-void Init();
+
+void DrawCylinder(UCylinder obj, GLint attribVerPos, GLint attribVerNorm, GLint attribVerUV, GLint lightColor, GLint lightPos);
+void MeshCreationCylinder(UCylinder obj);
 
 //Vertex Shader
 const GLchar* objectVertexShader = GLSL(440,
@@ -332,6 +339,10 @@ void RenderFrame() {
 	GLint lightPositionLoc = glGetUniformLocation(mainProgramID, "lightPos");
 	GLint viewPositionLoc = glGetUniformLocation(mainProgramID, "viewPosition");
 
+	GLint attribVertexPosition = glGetAttribLocation(mainProgramID, "vertexPosition");
+	GLint attribVertexNormal = glGetAttribLocation(mainProgramID, "vertexNormal");
+	GLint attribVertexTexCoord = glGetAttribLocation(mainProgramID, "vertexTexCoord");
+	   
 	//Uses user created function to draw the objects 
 	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, tableTop, textures.greyPlastic, view, projection);
 	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, frontRightLeg, textures.woodenLegs, view, projection);
@@ -347,9 +358,10 @@ void RenderFrame() {
 	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, chairBackLeft, textures.woodenLegs, view, projection);
 	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, chairBackRight, textures.woodenLegs, view, projection);
 	DrawObject(modelLoc, viewLoc, projLoc, objectColorLoc, lightColorLoc, lightPositionLoc, viewPositionLoc, chairBackSupport, textures.woodenLegs, view, projection);
-	cout << "Calling cylinder Draw -----" << endl;
-	Init();
-	cout << "Called cylinder Draw -----" << endl;
+
+	//cout << "Calling cylinder Draw -----" << endl;
+	DrawCylinder(cylinder, attribVertexPosition, attribVertexNormal, attribVertexTexCoord, lightColorLoc, lightPositionLoc);
+	//cout << "Called cylinder Draw -----" << endl;
 
 	glUseProgram(lightProgramID);
 	glm::mat4 model = glm::translate(lightPos) * glm::scale(lightScale);
@@ -377,7 +389,7 @@ void ObjectScaleTransRotate(Cube& obj, float sX, float sY, float sZ, float tX, f
 
 //User create function to draw the object given
 void DrawObject(GLint modelLoc, GLint viewLoc, GLint projLoc, GLint objectColorLoc, GLint lightColorLoc, GLint lightPosLoc, GLint viewPosLoc, Cube obj, GLuint texture, glm::mat4 view, glm::mat4 projection) {
-	cout << "Beginning of DrawObject" << endl;
+	//cout << "Beginning of DrawObject" << endl;
 	obj.model = obj.translation * obj.rotation * obj.scale;
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(obj.model));
 	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
@@ -388,10 +400,12 @@ void DrawObject(GLint modelLoc, GLint viewLoc, GLint projLoc, GLint objectColorL
 	const glm::vec3 cameraPos = mainCamera.Position;
 	glUniform3f(viewPosLoc, cameraPos.x, cameraPos.y, cameraPos.z);
 	glBindVertexArray(obj.vao);
+	glBindBuffer(GL_ARRAY_BUFFER, obj.vbo[0]);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, obj.vbo[1]);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texture);
 	glDrawElements(GL_TRIANGLES, obj.nIndices, GL_UNSIGNED_SHORT, NULL);
-	cout << "End of DrawObject" << endl;
+	//cout << "End of DrawObject" << endl;
 }
 
 //Loading a texture
@@ -625,48 +639,48 @@ void ImageFlipVert(unsigned char* image, int width, int height, int channels) {
 
 
 /*Keeping large blocks of the same func call in one location*/
-void Init() {
-	cout << "Beginning of Cylinder Draw" << endl;
-	attribVertexPosition = glGetAttribLocation(mainProgramID, "vertexPosition");
-	attribVertexNormal = glGetAttribLocation(mainProgramID, "vertexNormal");
-	attribVertexTexCoord = glGetAttribLocation(mainProgramID, "vertexTexCoord");
+void DrawCylinder(UCylinder cylinder, GLint attribVerPos, GLint attribVerNorm, GLint attribVerUV, GLint lightColorLoc, GLint lightPosLoc) {
+	//cout << "Beginning of Cylinder Draw" << endl;
 
-	Cylinder cylinder;
-	cylinder.set(5.0f, 5.0f, 5.0f, 32, 32, true);
+	glEnableVertexAttribArray(attribVerPos);
+	glEnableVertexAttribArray(attribVerNorm);
+	glEnableVertexAttribArray(attribVerUV);
 
-	GLuint vboId;
-	glGenBuffers(1, &vboId);
-	glBindBuffer(GL_ARRAY_BUFFER, vboId); 
-	glBufferData(GL_ARRAY_BUFFER, cylinder.getInterleavedVertexSize(), cylinder.getInterleavedVertices(), GL_STATIC_DRAW); 
+	int stride = cylinder.cylinder.getInterleavedStride();
+	glVertexAttribPointer(attribVerPos, 3, GL_FLOAT, false, stride, 0);
+	glVertexAttribPointer(attribVerNorm, 3, GL_FLOAT, false, stride, (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(attribVerUV, 2, GL_FLOAT, false, stride, (void*)(6 * sizeof(float)));
 
-	GLuint iboId;
-	glGenBuffers(1, &iboId);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboId);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, cylinder.getIndexSize(), cylinder.getIndices(), GL_STATIC_DRAW);
-
-	glBindBuffer(GL_ARRAY_BUFFER, vboId);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboId);
-
-	glEnableVertexAttribArray(attribVertexPosition);
-	glEnableVertexAttribArray(attribVertexNormal);
-	glEnableVertexAttribArray(attribVertexTexCoord);
-
-	int stride = cylinder.getInterleavedStride();
-	glVertexAttribPointer(attribVertexPosition, 3, GL_FLOAT, false, stride, 0);
-	glVertexAttribPointer(attribVertexNormal, 3, GL_FLOAT, false, stride, (void*)(3 * sizeof(float)));
-	glVertexAttribPointer(attribVertexTexCoord, 2, GL_FLOAT, false, stride, (void*)(6 * sizeof(float)));
-
+	glUniform3f(lightColorLoc, lightColor.r, lightColor.b, lightColor.b);
+	glUniform3f(lightPosLoc, lightPos.x, lightPos.y, lightPos.z);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, textures.woodenLegs);
-	glDrawElements(GL_TRIANGLES, cylinder.getIndexCount(), GL_UNSIGNED_INT, (void*)0);                      
+	glDrawElements(GL_TRIANGLES, cylinder.cylinder.getIndexCount(), GL_UNSIGNED_INT, (void*)0);
 
-	glDisableVertexAttribArray(attribVertexPosition);
-	glDisableVertexAttribArray(attribVertexNormal);
-	glDisableVertexAttribArray(attribVertexTexCoord);
+	glDisableVertexAttribArray(attribVerPos);
+	glDisableVertexAttribArray(attribVerNorm);
+	glDisableVertexAttribArray(attribVerUV);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-	cout << "End of Cylinder Draw" << endl;
+	//cout << "End of Cylinder Draw" << endl;
+}
+
+void MeshCreationCylinder(UCylinder cylinder) {
+	//cout << "Start of Cylinder Mesh creation" << endl;
+	cylinder.cylinder.set(5.0f, 5.0f, 9.0f, 32, 32, false);  //will be moved once cylinder is being drawn
+
+	glGenBuffers(2, cylinder.vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, cylinder.vbo[0]);
+	glBufferData(GL_ARRAY_BUFFER, cylinder.cylinder.getInterleavedVertexSize(), cylinder.cylinder.getInterleavedVertices(), GL_STATIC_DRAW);
+
+	glGenBuffers(1, &cylinder.ibo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cylinder.ibo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, cylinder.cylinder.getIndexSize(), cylinder.cylinder.getIndices(), GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ARRAY_BUFFER, cylinder.vbo[1]);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cylinder.ibo);
+	//cout << "End of cylinder mesh creation" << endl;
 }
 
 
@@ -686,6 +700,9 @@ void MainMeshCreation() {
 	MeshCreation(chairBackSupport);
 	MeshCreation(chairSeat);
 	MeshCreation(lightObject);
+
+	//Testing block
+	MeshCreationCylinder(cylinder);
 }
 
 void MainMeshDeletion() {
